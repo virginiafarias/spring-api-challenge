@@ -1,17 +1,16 @@
 package br.com.ia.challenge.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
-@Getter @Setter
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class GithubDTO {
 
-    private String id;
+    private Long id;
 
-    private String avatarUrl;
+    private String avatar_url;
 
-    private List<String> repositories;
+    private List<GithubRepoDTO> repositories;
 
 }

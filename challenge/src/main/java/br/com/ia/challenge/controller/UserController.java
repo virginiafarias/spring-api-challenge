@@ -1,16 +1,16 @@
 package br.com.ia.challenge.controller;
 
-import br.com.ia.challenge.model.GithubDTO;
 import br.com.ia.challenge.model.User;
 import br.com.ia.challenge.model.UserDTO;
 import br.com.ia.challenge.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,10 +22,10 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<UserDTO>> findAll() {
-        return ResponseEntity.ok(userService.findAll().stream()
-                .map(u -> u.getDTO())
-                .collect(Collectors.toList()));
+    public ResponseEntity<Page<UserDTO>> findAll(Pageable pageable) {
+        Page<User> users = userService.findAll(pageable);
+        return ResponseEntity.ok(users
+                .map(u -> u.getDTO()));
     }
 
     @GetMapping("/{id}")
@@ -68,9 +68,16 @@ public class UserController {
     }
 
     @GetMapping("/{id}/github")
-    public ResponseEntity<GithubDTO> findGithub(@PathVariable Integer userId) {
-        GithubDTO githubDTO = userService.findGithub(userId);
-        return githubDTO != null ? ResponseEntity.ok(githubDTO) : ResponseEntity.notFound().build();
+    public ResponseEntity<?> findGithub(@PathVariable("id") Integer userId) {
+        return userService.findById(userId)
+                .map(u -> {
+                    try {
+                        return ResponseEntity.ok(userService.findGithub(u.getGithub()));
+                    } catch (Exception e) {
+                        return ResponseEntity.notFound().build();
+                    }
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 }
