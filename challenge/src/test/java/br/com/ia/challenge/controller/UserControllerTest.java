@@ -15,6 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -24,12 +28,15 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
+@ContextConfiguration
 public class UserControllerTest {
 
     @Autowired
@@ -37,6 +44,9 @@ public class UserControllerTest {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private UserDetailsService userDetailsService;
 
     @Autowired
     private ObjectMapper mapper;
@@ -70,6 +80,9 @@ public class UserControllerTest {
 
     @BeforeEach
     public void setUp() throws Exception {
+        when(userDetailsService.loadUserByUsername("userone")).thenReturn(user1);
+        when(userDetailsService.loadUserByUsername("usertwo")).thenReturn(user2);
+
         when(userService.findById(user1.getId())).thenReturn(Optional.of(user1));
         when(userService.findById(3)).thenReturn(Optional.empty());
         doNothing().when(userService).delete(1);
@@ -79,6 +92,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindFirstPageWithSizeTwoWithThreeElements_thenReturnTwoElements() throws Exception {
         PageRequest pageRequest = PageRequest.of(0, 2);
         Page<User> pageUsers = new PageImpl<>(List.of(user1, user2), pageRequest, users.size());
@@ -93,6 +107,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindSecondPageWithSizeTwoWithThreeElements_thenReturnOneElements() throws Exception {
         PageRequest pageRequest = PageRequest.of(1, 2);
         Page<User> pageUsers = new PageImpl<>(List.of(user3), pageRequest, users.size());
@@ -107,6 +122,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindThirdPageWithSizeTwoWithThreeElements_thenReturnNoElements() throws Exception {
         PageRequest pageRequest = PageRequest.of(2, 2);
         Page<User> pageUsers = new PageImpl<>(List.of(), pageRequest, users.size());
@@ -119,6 +135,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindExistingUser_thenSuccess() throws Exception {
         mockMvc.perform(get("/users/1")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -127,6 +144,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "userone")
     public void whenFindNotExistingUser_thenNotFound() throws Exception {
         mockMvc.perform(get("/users/3")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -134,6 +152,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "userone")
     public void whenDeleteExistingUser_thenSuccess() throws Exception {
         mockMvc.perform(delete("/users/1")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -141,6 +160,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenDeleteNotExistingUser_thenNotFound() throws Exception {
         mockMvc.perform(delete("/users/3")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -148,6 +168,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenUpdateExistingUser_thenSuccess() throws Exception {
         mockMvc.perform(put("/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -162,6 +183,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenUpdateNotExistingUser_thenNotFound() throws Exception {
         mockMvc.perform(put("/users/3")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -170,6 +192,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenCreateUserWithoutId_thenSuccess() throws Exception {
         User user = User.builder().name("User One").email("userone@mail.com")
                 .github("userone").login("userone").admin(true).build();
@@ -188,6 +211,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenCreateUserWithId_thenUpdate() throws Exception {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -202,6 +226,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindGihubExistingUserExistingRepository_thenSuccess() throws Exception {
         mockMvc.perform(get("/users/1/github")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -209,12 +234,13 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.id", is(githubUser1.getId())))
                 .andExpect(jsonPath("$.avatar_url", is(githubUser1.getAvatar_url())))
                 .andExpect(jsonPath("$.repositories", hasSize(3)))
-                .andExpect(jsonPath("$.repositories[0]", is("repo1")))
-                .andExpect(jsonPath("$.repositories[1]", is("repo2")))
-                .andExpect(jsonPath("$.repositories[2]", is("repo3")));
+                .andExpect(jsonPath("$.repositories[0].name", is("repo1")))
+                .andExpect(jsonPath("$.repositories[1].name", is("repo2")))
+                .andExpect(jsonPath("$.repositories[2].name", is("repo3")));
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindGihubExistingUserNotExistingRepository_thenNotFound() throws Exception {
         mockMvc.perform(get("/users/2/github")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -222,6 +248,7 @@ public class UserControllerTest {
     }
 
     @Test
+    @WithMockUser("userone")
     public void whenFindGihubNotExistingUser_thenNotFound() throws Exception {
         mockMvc.perform(get("/users/3/github")
                         .contentType(MediaType.APPLICATION_JSON))
