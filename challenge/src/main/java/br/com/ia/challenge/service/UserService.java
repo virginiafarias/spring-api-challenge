@@ -15,50 +15,19 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Optional;
 
-@Service
-public class UserService {
+public interface UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    Page<User> findAll(Pageable pageable);
 
-    @Autowired
-    private RestTemplate restTemplate;
+    User save(User user);
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    User update(User user);
 
-    private final String githubEndpoint = "https://api.github.com/";
+    Optional<User> findById(Integer id);
 
-    public Page<User> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable);
-    }
+    void delete(Integer id);
 
-    public User save(User user) {
-        user.setId(null);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        return userRepository.save(user);
-    }
+    GithubDTO findGithub(String githubUser) throws Exception;
 
-    public User update(User user) {
-        return userRepository.save(user);
-    }
 
-    public Optional<User> findById(Integer id) {
-        return userRepository.findById(id);
-    }
-
-    public void delete(Integer id) {
-        userRepository.deleteById(id);
-    }
-
-    public GithubDTO findGithub(String githubUser) throws Exception {
-        GithubDTO github = restTemplate.getForObject(githubEndpoint.concat("/users/").concat(githubUser), GithubDTO.class);
-        if (github == null) {
-            throw new Exception("Github user does not exist");
-        }
-        GithubRepoDTO[] repositories = restTemplate.getForObject(githubEndpoint.concat("/users/")
-                .concat(githubUser).concat("/repos"), GithubRepoDTO[].class);
-        github.setRepositories(List.of(repositories));
-        return github;
-    }
 }
