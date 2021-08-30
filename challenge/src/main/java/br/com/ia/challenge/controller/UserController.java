@@ -9,17 +9,22 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
 @AllArgsConstructor(onConstructor_ = {@Autowired})
 public class UserController {
 
-    private final UserService userService;
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping
     public ResponseEntity<Page<UserDTO>> findAll(Pageable pageable) {
@@ -37,13 +42,12 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserDTO> save(@RequestBody User user) {
-        return userService.findById(user.getId())
-                .map(u -> ResponseEntity.ok(userService.update(u).getDTO()))
-                .orElseGet(() -> new ResponseEntity<>(userService.save(user).getDTO(), HttpStatus.CREATED));
+        return new ResponseEntity<>(userService.save(user).getDTO(), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserDTO> update(@RequestBody User user, @PathVariable Integer id) {
+    public ResponseEntity<UserDTO> update(@RequestBody User user, @PathVariable Integer id,
+                                          @AuthenticationPrincipal User authenticatedUser) {
         return userService.findById(id)
                 .map(u -> {
                     u.setAdmin(user.isAdmin());
@@ -51,7 +55,8 @@ public class UserController {
                     u.setGithub(user.getGithub());
                     u.setName(user.getName());
                     u.setLogin(user.getLogin());
-                    u.setPassword(user.getPassword());
+                    if (authenticatedUser.isAdmin())
+                        u.setPassword(passwordEncoder.encode(user.getPassword()));
                     return ResponseEntity.ok(userService.update(u).getDTO());
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());

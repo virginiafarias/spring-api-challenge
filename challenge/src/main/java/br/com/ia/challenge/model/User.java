@@ -21,7 +21,6 @@ public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     private Integer id;
 
     @NotBlank(message = "The field name is required")

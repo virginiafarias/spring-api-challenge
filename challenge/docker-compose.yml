@@ -1,0 +1,39 @@
+version: "3.9"
+services:
+  db:
+    container_name: db
+    image: postgres:alpine
+    ports:
+      - 5533:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ia-challenge
+    volumes:
+          - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+
+  app:
+    container_name: ia-challenge-app
+    build:
+      context: .
+    image: spring-ia-challenge:latest
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/ia-challenge
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    depends_on:
+        - db
+        - redis

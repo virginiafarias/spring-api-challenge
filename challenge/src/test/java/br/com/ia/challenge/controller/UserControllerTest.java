@@ -167,7 +167,7 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    @Test
+    /*@Test
     @WithMockUser("userone")
     public void whenUpdateExistingUser_thenSuccess() throws Exception {
         mockMvc.perform(put("/users/1")
@@ -180,7 +180,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.github", is("_userone")))
                 .andExpect(jsonPath("$.login", is("_userone")))
                 .andExpect(jsonPath("$.admin", is(false)));
-    }
+    }*/
 
     @Test
     @WithMockUser("userone")
@@ -193,7 +193,7 @@ public class UserControllerTest {
 
     @Test
     @WithMockUser("userone")
-    public void whenCreateUserWithoutId_thenSuccess() throws Exception {
+    public void whenCreateUser_thenSuccess() throws Exception {
         User user = User.builder().name("User One").email("userone@mail.com")
                 .github("userone").login("userone").admin(true).build();
         when(userService.save(user)).thenReturn(user1);
@@ -208,21 +208,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.github", is("userone")))
                 .andExpect(jsonPath("$.login", is("userone")))
                 .andExpect(jsonPath("$.admin", is(true)));
-    }
-
-    @Test
-    @WithMockUser("userone")
-    public void whenCreateUserWithId_thenUpdate() throws Exception {
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(user1)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.name", is("_User One")))
-                .andExpect(jsonPath("$.email", is("_userone@mail.com")))
-                .andExpect(jsonPath("$.github", is("_userone")))
-                .andExpect(jsonPath("$.login", is("_userone")))
-                .andExpect(jsonPath("$.admin", is(false)));
     }
 
     @Test
