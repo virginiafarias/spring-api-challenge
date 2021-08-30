@@ -1,6 +1,6 @@
 # spring-api-challenge
 
-This is an Spring Boot Rest API. It uses Posgres as database and REDIS to cache session.
+This is an Spring Boot Rest API. It uses PosgreSQL as database and REDIS to cache session.
 
 To run it, download the [docker-compose](https://github.com/virginiafarias/spring-api-challenge/blob/master/challenge/docker-compose.yml) file and execute `docker-compose up`. After that, app will be running on `http://localhost:8080`
 
